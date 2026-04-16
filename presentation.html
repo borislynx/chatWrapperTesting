@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BorisBot - AI Wrapper Prezentacija</title>
+  <style>
+    :root {
+      --main:       #ff4d2d;
+      --white:      #ffffff;
+      --black:      #101015;
+      --grey:       #9b9bb3;
+      --lightGrey:  #f6f1ec;
+      --glow:       #ffd166;
+      --cobalt:     #1b3cff;
+
+      --bg:         #101015;
+      --panel:      rgba(22, 22, 30, 0.88);
+      --panel-2:    rgba(30, 28, 40, 0.80);
+      --text:       #f6f1ec;
+      --muted:      #9b9bb3;
+      --shadow:     0 20px 60px rgba(0,0,0,0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left,  rgba(255, 77, 45, 0.14), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(255, 209, 102, 0.10), transparent 26%),
+        linear-gradient(135deg, #0c0c12, #101015 55%, #14121e);
+      color: var(--text);
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .deck { width: 100vw; height: 100vh; position: relative; }
+    .slide { position: absolute; inset: 0; display: none; padding: 28px; }
+    .slide.active { display: flex; align-items: center; justify-content: center; }
+
+    .card {
+      width: min(1200px, 100%);
+      height: min(760px, calc(100vh - 56px));
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 34px 40px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(18px);
+      overflow: auto;
+    }
+
+    /* topbar */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .eyebrow {
+      color: var(--main);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* typography */
+    h1 { font-size: clamp(36px, 5vw, 64px); line-height: 1.04; }
+    h2 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; margin-bottom: 12px; }
+    h3 { font-size: 20px; margin-bottom: 8px; color: var(--white); }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1.6;
+      margin-top: 14px;
+      max-width: 880px;
+    }
+
+    /* layout */
+    .content { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; flex: 1; margin-top: 4px; }
+    .content.one { grid-template-columns: 1fr; }
+    .content.thirds { grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; margin-top: 4px; }
+
+    .panel, .mini {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px;
+      padding: 22px 24px;
+    }
+    .panel.accent-border { border-color: rgba(255, 77, 45, 0.35); }
+
+    ul { padding-left: 22px; font-size: 20px; line-height: 1.6; }
+    li + li { margin-top: 10px; }
+
+    .mini p, .body-text {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .callout {
+      border-left: 4px solid var(--main);
+      background: rgba(255, 77, 45, 0.09);
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 18px;
+      line-height: 1.5;
+      margin-top: 18px;
+    }
+
+    .callout.yellow {
+      border-left-color: var(--glow);
+      background: rgba(255, 209, 102, 0.08);
+    }
+
+    .callout.cobalt {
+      border-left-color: var(--cobalt);
+      background: rgba(27, 60, 255, 0.09);
+    }
+
+    .formula {
+      font-size: clamp(22px, 3vw, 36px);
+      font-weight: 700;
+      line-height: 1.2;
+      background: linear-gradient(90deg, var(--main), var(--glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-top: 16px;
+    }
+
+    .tag {
+      display: inline-block;
+      background: rgba(255, 77, 45, 0.15);
+      border: 1px solid rgba(255, 77, 45, 0.3);
+      color: var(--main);
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .tag.yellow {
+      background: rgba(255, 209, 102, 0.12);
+      border-color: rgba(255, 209, 102, 0.3);
+      color: var(--glow);
+    }
+
+    .tag.cobalt {
+      background: rgba(27, 60, 255, 0.12);
+      border-color: rgba(27, 60, 255, 0.3);
+      color: #7b9fff;
+    }
+
+    /* code block */
+    .code-block {
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 16px 20px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #e2e8f0;
+      margin-top: 14px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .code-block .kw  { color: var(--main); }
+    .code-block .str { color: var(--glow); }
+    .code-block .cm  { color: var(--muted); }
+    .code-block .fn  { color: #7b9fff; }
+
+    /* flow diagram */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+    .flow-box {
+      background: rgba(255, 77, 45, 0.1);
+      border: 1px solid rgba(255, 77, 45, 0.3);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white);
+    }
+    .flow-arrow {
+      color: var(--main);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    /* command list */
+    .cmd-row {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 17px;
+    }
+    .cmd-row:last-child { border-bottom: none; }
+    .cmd-name {
+      font-family: "SF Mono", monospace;
+      color: var(--glow);
+      font-size: 15px;
+      min-width: 160px;
+    }
+    .cmd-desc { color: var(--muted); }
+
+    /* footer */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      gap: 10px;
+    }
+
+    /* nav */
+    .controls {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    button {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(16, 16, 21, 0.9);
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.15s;
+    }
+    button:hover { background: rgba(255, 77, 45, 0.2); border-color: var(--main); }
+
+    @media (max-width: 900px) {
+      html, body { overflow: auto; }
+      .slide { padding: 14px; }
+      .card { height: auto; min-height: calc(100vh - 28px); padding: 22px; }
+      .content, .grid2, .content.thirds { grid-template-columns: 1fr; }
+      ul { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- 1. TITLE -->
+  <section class="slide active">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">AI Wrapper · BorisBot</div>
+        <div class="count">1 / 8</div>
+      </div>
+      <h1>Pravljenje sopstvenog<br>AI Wrappera</h1>
+      <p class="subtitle">Od sirovog jezičkog modela do sopstvenog chatbota - šta to znači, kako funkcioniše, i zašto je moćnije od korišćenja ChatGPT-a u browseru.</p>
+      <div class="content one" style="margin-top: 24px;">
+        <div class="panel accent-border">
+          <div class="formula">API + Python + tvoja logika = BorisBot</div>
+          <p class="subtitle" style="font-size: 17px; margin-top: 14px; max-width: unset;">
+            Ukratko ćemo proći kroz teoriju, a zatim kroz tačno šta je napravljeno, kako radi ispod haube, i šta wrapper čini zaista korisnijim od bilo kog chat interfejsa.
+          </p>
+          <div style="margin-top: 18px;">
+            <span class="tag">LLMs</span>
+            <span class="tag">Groq API</span>
+            <span class="tag yellow">Python wrapper</span>
+            <span class="tag cobalt">File context</span>
+          </div>
+        </div>
+      </div>
+      <div class="footer"><span>← → za navigaciju</span><span>BorisBot</span></div>
+    </div>
+  </section>
+
+  <!-- 2. LLM BASICS (brief) -->
+  <section class="slide">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">Teorija - kratka verzija</div>
+        <div class="count">2 / 8</div>
+      </div>
+      <h2>Kako LLM-ovi rade (kratka verzija)</h2>
+      <div class="content">
+        <div class="panel">
+          <ul>
+            <li>LLM je istreniran na ogromnoj količini teksta i uči da predvidi sledeći token.</li>
+            <li>Nema memoriju između zahteva - svaki poziv je stateless.</li>
+            <li><strong>Context window</strong> je sav tekst koji model može da "vidi" odjednom - istorija, uputstva i odgovor zajedno.</li>
+            <li><strong>System prompt</strong> definiše ličnost, pravila i ulogu pre nego što razgovor počne.</li>
+            <li>Temperature kontroliše nasumičnost - niska = precizno, visoka = kreativno.</li>
+          </ul>
+          <div class="callout">Model sam po sebi ne zna ko si, na kom projektu radiš, niti kako želiš da dobijаš odgovore - osim ako mu ne kažeš.</div>
+        </div>
+        <div class="mini">
+          <h3>Zašto je ovo važno za wrapper</h3>
+          <p>Sve što model "zna" o tvom kontekstu mora biti poslato uz zahtev. Zadatak wrappera je da to upravlja automatski - da se ne moraš ponavljati svaki put.</p>
+          <div class="flow" style="margin-top: 20px;">
+            <div class="flow-box">Tvoja poruka</div>
+            <div class="flow-arrow">+</div>
+            <div class="flow-box">Istorija</div>
+            <div class="flow-arrow">+</div>
+            <div class="flow-box">System prompt</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">API poziv</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. WHAT IS A WRAPPER -->
+  <section class="slide">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">Koncept</div>
+        <div class="count">3 / 8</div>
+      </div>
+      <h2>Šta je wrapper?</h2>
+      <div class="grid2">
+        <div class="panel">
+          <h3>ChatGPT u browseru</h3>
+          <ul style="font-size: 18px;">
+            <li>Kucaš, odgovara</li>
+            <li>Nema memorije između sesija</li>
+            <li>Ne može da vidi tvoje fajlove ili kod</li>
+            <li>Fiksna ličnost, fiksan UI</li>
+            <li>Bez automatizacije - treba čovek</li>
+            <li>Ne može se povezati sa drugim alatima</li>
+          </ul>
+        </div>
+        <div class="panel accent-border">
+          <h3 style="color: var(--main);">Tvoj sopstveni wrapper</h3>
+          <ul style="font-size: 18px;">
+            <li>Ti kontrolišeš sve oko modela</li>
+            <li>Trajna istorija razgovora po sesiji</li>
+            <li>Može da učita i razmišlja o pravim fajlovima</li>
+            <li>Prilagođena ličnost ugrađena trajno</li>
+            <li>Može da radi automatski, bez kucanja</li>
+            <li>Može se ulančati sa skriptama i pipeline-ovima</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout yellow" style="margin-top: 18px;">Wrapper ne menja model - menja sve oko modela. Tu leži prava moć.</div>
+    </div>
+  </section>
+
+  <!-- 4. ARCHITECTURE -->
+  <section class="slide">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">Ispod haube</div>
+        <div class="count">4 / 8</div>
+      </div>
+      <h2>Kako je BorisBot napravljen</h2>
+      <div class="content">
+        <div class="panel">
+          <div class="code-block"><span class="kw">class</span> <span class="fn">BorisBot</span>:
+  <span class="kw">def</span> <span class="fn">__init__</span>(self, api_key):
+    self.client = <span class="fn">OpenAI</span>(
+      api_key=api_key,
+      base_url=<span class="str">"https://api.groq.com/openai/v1"</span>
+    )
+    self.history = [system_prompt]  <span class="cm"># memorija</span>
+    self.loaded_files = []          <span class="cm"># učitani fajlovi</span>
+
+  <span class="kw">def</span> <span class="fn">chat</span>(self, message):
+    self.history.<span class="fn">append</span>(user_msg)
+    reply = self.client.chat.<span class="fn">create</span>(
+      model=<span class="str">"llama-3.1-8b-instant"</span>,
+      messages=self.history      <span class="cm"># cela istorija svaki put</span>
+    )
+    self.history.<span class="fn">append</span>(reply)
+    <span class="kw">return</span> reply</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="mini">
+            <h3>Model</h3>
+            <p>Llama 3.1 8B na Groq-u - besplatno, brzo, isti API kao OpenAI. Jedna linija koda za zamenu modela.</p>
+          </div>
+          <div class="mini">
+            <h3>Memorija</h3>
+            <p><code style="color: var(--glow);">self.history</code> raste sa svakim redom. Ceo razgovor se šalje uz svaki zahtev - tako funkcioniše chat kroz više krugova.</p>
+          </div>
+          <div class="mini">
+            <h3>Ličnost</h3>
+            <p>System prompt se ubacuje jednom pri pokretanju. Model ostaje u ulozi tokom cele sesije.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. COMMANDS -->
+  <section class="slide">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">Funkcionalnosti</div>
+        <div class="count">5 / 8</div>
+      </div>
+      <h2>BorisBot komande</h2>
+      <div class="content">
+        <div class="panel">
+          <div class="cmd-row">
+            <span class="cmd-name">/load &lt;putanja&gt;</span>
+            <span class="cmd-desc">Učitava fajl sa diska u kontekst razgovora. Zatim postavljaš pitanja o njemu prirodno.</span>
+          </div>
+          <div class="cmd-row">
+            <span class="cmd-name">/loaded</span>
+            <span class="cmd-desc">Prikazuje koji fajlovi su trenutno učitani u sesiji.</span>
+          </div>
+          <div class="cmd-row">
+            <span class="cmd-name">/atlas</span>
+            <span class="cmd-desc">Ispisuje lični Atlas & Unity vodič za komande - rebuild, dev server, testovi.</span>
+          </div>
+          <div class="cmd-row">
+            <span class="cmd-name">/joke</span>
+            <span class="cmd-desc">Traži od bota vic.</span>
+          </div>
+          <div class="cmd-row">
+            <span class="cmd-name">/model</span>
+            <span class="cmd-desc">Prikazuje koji model radi i gde je hostovan.</span>
+          </div>
+          <div class="cmd-row">
+            <span class="cmd-name">/clear</span>
+            <span class="cmd-desc">Resetuje istoriju razgovora. Svež start bez ponovnog pokretanja procesa.</span>
+          </div>
+        </div>
+        <div class="mini">
+          <h3>Zašto prilagođene komande?</h3>
+          <p>Svaka komanda je samo Python - provjera stringa koja transformiše unos pre nego što stigne do API-ja, ili ga zaobilazi potpuno za lokalne podatke kao <span style="color: var(--main);">/atlas</span>.</p>
+          <p style="margin-top: 12px;">Dodavanje nove komande je 5 linija koda. Bez pluginova, bez marketplace-a, bez dozvola.</p>
+          <div class="callout" style="margin-top: 16px; font-size: 16px;">Ti poseduješ interfejs. ChatGPT nema <span style="color: var(--glow);">/atlas</span> komandu. Tvoj ima.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. /load deep dive -->
+  <section class="slide">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">Ključna funkcija</div>
+        <div class="count">6 / 9</div>
+      </div>
+      <h2>Komanda /load - zašto je važna</h2>
+      <div class="content">
+        <div class="panel">
+          <ul>
+            <li>Čita bilo koji fajl sa lokalnog diska - Python, SQL, config, logovi, šta god.</li>
+            <li>Ubacuje ceo sadržaj direktno u istoriju razgovora.</li>
+            <li>Model sada ima taj fajl u svom context window-u - može da razmišlja o njemu, objasni ga, pronađe bugove.</li>
+            <li>Ostaje dok ne uradiš <code style="color: var(--glow);">/clear</code> - nema ponovnog učitavanja.</li>
+          </ul>
+          <div class="code-block" style="margin-top: 16px;"><span class="cm"># Primer sesije</span>
+/load ~/projects/atlas/models.py
+<span class="cm">→ Učitan models.py (312 linija)</span>
+
+Ti: <span class="str">kako izgleda User model?</span>
+Ti: <span class="str">objasni vezu između User i Team modela</span></div>
+        </div>
+        <div class="mini">
+          <h3>Ovo je prava razlika</h3>
+          <p>ChatGPT ne može da otvori tvoje fajlove. Ne može da vidi tvoj kod. Moraš ručno da lepiš kod - i zaboravlja između sesija.</p>
+          <p style="margin-top: 14px;">Sa <span style="color: var(--glow);">/load</span>, usmeravaš bota na pravi kod i vodiš pravi razgovor o njemu.</p>
+          <div class="callout yellow" style="margin-top: 16px; font-size: 15px;">Isti model. Potpuno drugačija mogućnost - jer ti kontrolišeš kontekst.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. RATE LIMITS -->
+  <section class="slide">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">Besplatan tier - Groq</div>
+        <div class="count">7 / 9</div>
+      </div>
+      <h2>Koliko možeš da koristiš besplatno?</h2>
+      <div class="content">
+        <div class="panel">
+          <style>
+            .rl-table { width: 100%; border-collapse: collapse; font-size: 15px; margin-top: 6px; }
+            .rl-table th { color: var(--muted); font-weight: 600; text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+            .rl-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text); }
+            .rl-table tr:last-child td { border-bottom: none; }
+            .rl-table tr.highlight td { background: rgba(255, 77, 45, 0.07); }
+            .rl-table .num { color: var(--glow); font-family: "SF Mono", monospace; font-size: 14px; }
+            .rl-table .model-name { font-family: "SF Mono", monospace; font-size: 13px; color: #a5b4fc; }
+          </style>
+          <table class="rl-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Req/min</th>
+                <th>Req/dan</th>
+                <th>Token/min</th>
+                <th>Token/dan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight">
+                <td class="model-name">llama-3.1-8b-instant ★</td>
+                <td class="num">30</td>
+                <td class="num">14.400</td>
+                <td class="num">6.000</td>
+                <td class="num">500.000</td>
+              </tr>
+              <tr>
+                <td class="model-name">llama-3.3-70b-versatile</td>
+                <td class="num">30</td>
+                <td class="num">1.000</td>
+                <td class="num">12.000</td>
+                <td class="num">100.000</td>
+              </tr>
+              <tr>
+                <td class="model-name">llama-4-scout-17b</td>
+                <td class="num">30</td>
+                <td class="num">1.000</td>
+                <td class="num">30.000</td>
+                <td class="num">500.000</td>
+              </tr>
+              <tr>
+                <td class="model-name">qwen/qwen3-32b</td>
+                <td class="num">60</td>
+                <td class="num">1.000</td>
+                <td class="num">6.000</td>
+                <td class="num">500.000</td>
+              </tr>
+              <tr>
+                <td class="model-name">moonshotai/kimi-k2</td>
+                <td class="num">60</td>
+                <td class="num">1.000</td>
+                <td class="num">10.000</td>
+                <td class="num">300.000</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size: 13px; color: var(--muted); margin-top: 10px;">★ BorisBot koristi ovaj model</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="mini">
+            <h3>Šta ovo znači u praksi?</h3>
+            <p>14.400 zahteva dnevno = praktično neograničeno za ličnu upotrebu. Prosečan razgovor ima 10–30 poruka.</p>
+          </div>
+          <div class="mini">
+            <h3>500k tokena dnevno</h3>
+            <p>Jedan token ≈ 0.75 reči. 500k tokena = ~375.000 reči. To je oko 750 stranica teksta - na dan, besplatno.</p>
+          </div>
+          <div class="callout yellow" style="font-size: 15px;">
+            Nema kreditne kartice. Nema troška. Samo se registruješ na console.groq.com i dobijaš API ključ.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. WHY WRAP -->
+  <section class="slide">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">Šira slika</div>
+        <div class="count">8 / 9</div>
+      </div>
+      <h2>Zašto uopšte praviti wrapper?</h2>
+      <div class="content thirds">
+        <div class="panel">
+          <h3 style="color: var(--main);">Vlasništvo nad kontekstom</h3>
+          <p class="body-text">Tvoj stack, tvoji projekti, tvoj stil - ugrađeni trajno. Nikad se ne ponavljaš. Svaka sesija počinje sa punim kontekstom o tome ko si i šta praviš.</p>
+        </div>
+        <div class="panel">
+          <h3 style="color: var(--glow);">Automatizacija</h3>
+          <p class="body-text">Wrapper je samo Python. Možeš ga pozvati iz skripte, git hook-a, cron joba. Model radi bez čoveka koji kuca - pokreni ga po rasporedu, prosledi rezultate na Slack, okini na događaje.</p>
+        </div>
+        <div class="panel">
+          <h3 style="color: #7b9fff;">Sloboda izbora modela</h3>
+          <p class="body-text">Promeni sa Llama na GPT-4 na Gemini u jednoj liniji. Bez ponovnog učenja UI-ja. Bez migracije podešavanja. Model je samo parametar - tvoja logika, komande i format istorije ostaju isti.</p>
+        </div>
+      </div>
+      <div class="callout" style="margin-top: 18px;">
+        Wrapper pretvara generički model u specijaliste koji poznaje tvoj kod, govori tvojim jezikom i radi unutar tvojih alata.
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. CONCLUSION -->
+  <section class="slide">
+    <div class="card">
+      <div class="topbar">
+        <div class="eyebrow">Zaključak</div>
+        <div class="count">9 / 9</div>
+      </div>
+      <h2>Šta smo napravili i šta sledi</h2>
+      <div class="content">
+        <div class="panel">
+          <h3 style="margin-bottom: 14px;">Šta BorisBot ima danas</h3>
+          <ul>
+            <li>Besplatan API preko Groq-a - Llama 3.1, nula troška</li>
+            <li>Trajna memorija razgovora po sesiji</li>
+            <li>Prilagođena ličnost i system prompt</li>
+            <li>Učitavanje fajlova - razmišljanje o pravom kodu</li>
+            <li>Brojač krugova, obojen ispis, čist CLI</li>
+            <li>Lične komande: /atlas, /load, /joke</li>
+            <li>Konfiguracija preko .env - bez hardkodovanih tajni</li>
+          </ul>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="mini">
+            <h3>Laki sledeći koraci</h3>
+            <p>Automatsko učitavanje fajlova projekta pri pokretanju. Čuvanje razgovora u log fajl. Dodaj /git komandu koja pokreće git status i objašnjava ga.</p>
+          </div>
+          <div class="mini">
+            <h3>Veći sledeći koraci</h3>
+            <p>Daj mu prave alate - zapravo pokreni terminalne komande, pozovi API-je, piši fajlove. To je kad chatbot postaje agent.</p>
+          </div>
+          <div class="callout" style="font-size: 16px;">
+            <div class="formula" style="font-size: 22px;">model + kontekst + tvoja logika = tvoj alat</div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>BorisBot v1.0 - napravljen od nule u jednoj sesiji</span>
+        <span>groq.com · llama-3.1-8b-instant · Python 3.9</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="controls">
+  <button onclick="prev()">←</button>
+  <button onclick="next()">→</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function show(i) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[i].classList.add('active');
+  }
+  function next() { current = (current + 1) % slides.length; show(current); }
+  function prev() { current = (current - 1 + slides.length) % slides.length; show(current); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft')  prev();
+  });
+</script>
+</body>
+</html>
