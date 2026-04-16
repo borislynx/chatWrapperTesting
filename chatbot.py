@@ -4,6 +4,7 @@ Get your free API key at: https://console.groq.com
 """
 
 import os
+import glob
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -18,6 +19,7 @@ RESET  = "\033[0m"
 BOLD   = "\033[1m"
 
 MODEL = "llama-3.1-8b-instant"
+TOKEN_LIMIT = 5000  # safe limit under Groq's 6000 TPM for free tier
 
 SYSTEM_PROMPT = """You are BorisBot, Boris's personal AI assistant. 
 You run on the llama-3.1-8b-instant model hosted by Groq.
@@ -36,28 +38,96 @@ class BorisBot:
         self.history = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.loaded_files = []  # tracks which files are in context
 
-    def load_file(self, path: str) -> str:
-        path = os.path.expanduser(path)
+    # Binary / non-text extensions to skip when loading folders
+    SKIP_EXT = {
+        ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp",
+        ".woff", ".woff2", ".ttf", ".eot",
+        ".zip", ".tar", ".gz", ".br",
+        ".pyc", ".pyo", ".so", ".dylib", ".dll",
+        ".db", ".sqlite", ".sqlite3",
+        ".lock",
+    }
+    SKIP_DIRS = {"node_modules", ".git", "__pycache__", "venv", ".venv", ".next", "dist", "build"}
+
+    def load_file(self, path: str) -> str | None:
+        path = os.path.expanduser(os.path.abspath(path))
         if not os.path.exists(path):
             return None
-        with open(path, "r", errors="replace") as f:
-            content = f.read()
-        filename = os.path.basename(path)
-        self.loaded_files.append(filename)
-        # inject the file as a user message so it lives in conversation history
+        try:
+            with open(path, "r", errors="replace") as f:
+                content = f.read()
+        except (PermissionError, IsADirectoryError):
+            return None
+        self.loaded_files.append(path)
+        rel = os.path.basename(path)
         self.history.append({
             "role": "user",
-            "content": f"I'm loading this file for reference — {filename}:\n\n```\n{content}\n```"
+            "content": f"I'm loading this file for reference — {rel} ({path}):\n\n```\n{content}\n```"
         })
         self.history.append({
             "role": "assistant",
-            "content": f"Got it. I've read {filename} ({len(content.splitlines())} lines). Ask me anything about it."
+            "content": f"Got it. I've read {rel} ({len(content.splitlines())} lines). Ask me anything about it."
         })
-        return filename
+        return path
+
+    def load_path(self, path: str) -> list[str]:
+        """Load a file, folder, or glob pattern. Returns list of loaded paths."""
+        path = os.path.expanduser(path.strip())
+
+        # Handle glob patterns (e.g. *.ts, **/*.py)
+        if any(c in path for c in ("*", "?")):
+            matches = sorted(glob.glob(path, recursive=True))
+            loaded = []
+            for m in matches:
+                if os.path.isfile(m) and self._should_load(m):
+                    result = self.load_file(m)
+                    if result:
+                        loaded.append(result)
+            return loaded
+
+        path = os.path.abspath(path)
+
+        # Single file
+        if os.path.isfile(path):
+            result = self.load_file(path)
+            return [result] if result else []
+
+        # Directory — walk and load text files
+        if os.path.isdir(path):
+            loaded = []
+            for root, dirs, files in os.walk(path):
+                dirs[:] = [d for d in dirs if d not in self.SKIP_DIRS]
+                for fname in sorted(files):
+                    fpath = os.path.join(root, fname)
+                    if self._should_load(fpath):
+                        result = self.load_file(fpath)
+                        if result:
+                            loaded.append(result)
+            return loaded
+
+        return []
+
+    def _should_load(self, path: str) -> bool:
+        _, ext = os.path.splitext(path)
+        return ext.lower() not in self.SKIP_EXT
+
+    def _estimate_tokens(self) -> int:
+        """Rough token estimate: ~4 chars per token."""
+        total_chars = sum(len(m["content"]) for m in self.history)
+        return total_chars // 4
 
     def chat(self, user_message: str) -> str:
         self.turn += 1
         self.history.append({"role": "user", "content": user_message})
+
+        est = self._estimate_tokens()
+        if est > TOKEN_LIMIT:
+            self.history.pop()  # remove the message we just added
+            self.turn -= 1
+            return (
+                f"Context too large (~{est:,} tokens, limit ~{TOKEN_LIMIT:,}). "
+                f"Use /clear to reset, or load fewer files."
+            )
 
         response = self.client.chat.completions.create(
             model=self.model,
@@ -80,7 +150,8 @@ def print_help():
   {YELLOW}/model{RESET}         — show the current model info
   {YELLOW}/clear{RESET}         — clear conversation history
   {YELLOW}/atlas{RESET}         — show helpful commands for Atlas & Unity
-  {YELLOW}/load <path>{RESET}   — load a file into context, then ask questions about it
+  {YELLOW}/load{RESET}           — interactive mode: paste paths one per line
+  {YELLOW}/load <paths>{RESET}  — inline: comma-separated files, folders, or globs
   {YELLOW}/loaded{RESET}        — list files currently loaded in context
   {YELLOW}/help{RESET}          — show this menu
   {YELLOW}quit{RESET}           — exit
@@ -127,22 +198,45 @@ Ask me anything. Type {YELLOW}/help{GREEN} for commands.{RESET}
             print(f"{CYAN}BorisBot:{RESET} Running {YELLOW}{bot.model}{RESET} via Groq.\n")
             continue
 
-        if user_input.lower().startswith("/load "):
-            path = user_input[6:].strip()
-            print(f"{GRAY}Loading {path}...{RESET}")
-            result = bot.load_file(path)
-            if result is None:
-                print(f"{CYAN}BorisBot:{RESET} {YELLOW}File not found:{RESET} {path}\n")
-            else:
-                print(f"{CYAN}BorisBot:{RESET} {GREEN}Loaded {result}.{RESET} Ask me anything about it.\n")
-            continue
-
-        elif user_input.lower() == "/loaded":
+        if user_input.lower() == "/loaded":
             if not bot.loaded_files:
                 print(f"{CYAN}BorisBot:{RESET} {GRAY}No files loaded yet.{RESET}\n")
             else:
                 files = "\n    ".join(bot.loaded_files)
                 print(f"{CYAN}BorisBot:{RESET} Files in context:\n    {YELLOW}{files}{RESET}\n")
+            continue
+
+        if user_input.lower().startswith("/load"):
+            arg = user_input[5:].strip()
+            paths = []
+            if arg:
+                # Inline: /load path1, path2
+                paths = [p.strip() for p in arg.split(",") if p.strip()]
+            else:
+                # Interactive: paste paths one per line, empty line to finish
+                print(f"{GRAY}Paste paths one per line (empty line to finish):{RESET}")
+                while True:
+                    try:
+                        line = input(f"  {GRAY}path:{RESET} ").strip()
+                    except (KeyboardInterrupt, EOFError):
+                        break
+                    if not line:
+                        break
+                    paths.append(line)
+            all_loaded = []
+            for path in paths:
+                print(f"{GRAY}Loading {path}...{RESET}")
+                loaded = bot.load_path(path)
+                if not loaded:
+                    print(f"  {YELLOW}Not found or empty:{RESET} {path}")
+                else:
+                    all_loaded.extend(loaded)
+                    for f in loaded:
+                        print(f"  {GREEN}✓{RESET} {f}")
+            if all_loaded:
+                print(f"{CYAN}BorisBot:{RESET} {GREEN}Loaded {len(all_loaded)} file(s).{RESET} Ask me anything about them.\n")
+            elif paths:
+                print(f"{CYAN}BorisBot:{RESET} {YELLOW}No files loaded.{RESET}\n")
             continue
 
         elif user_input.lower() == "/joke":
