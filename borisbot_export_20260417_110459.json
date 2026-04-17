@@ -1,0 +1,92 @@
+{
+  "exported_at": "2026-04-17T11:04:59.853535",
+  "model": "llama-3.1-8b-instant",
+  "turns": 4,
+  "estimated_tokens": 211,
+  "loaded_files": [],
+  "speak_enabled": true,
+  "timestamps": [
+    [
+      1,
+      "user",
+      "2026-04-17T11:03:33.078369"
+    ],
+    [
+      1,
+      "assistant",
+      "2026-04-17T11:03:33.419018"
+    ],
+    [
+      2,
+      "user",
+      "2026-04-17T11:03:41.418594"
+    ],
+    [
+      2,
+      "assistant",
+      "2026-04-17T11:03:41.602559"
+    ],
+    [
+      3,
+      "user",
+      "2026-04-17T11:03:56.824007"
+    ],
+    [
+      3,
+      "assistant",
+      "2026-04-17T11:03:56.980235"
+    ],
+    [
+      4,
+      "user",
+      "2026-04-17T11:04:36.325351"
+    ],
+    [
+      4,
+      "assistant",
+      "2026-04-17T11:04:36.601310"
+    ]
+  ],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are BorisBot, Boris's personal AI assistant.\nYou run on the llama-3.1-8b-instant model hosted by Groq.\nYou specialise in coding and tech questions but can handle anything.\nYou are direct and no-fluff. Keep answers concise.\nYou have tools available: get_current_time and calculate. Use them when relevant.\nWhen a tool has already returned a result, just state it plainly (e.g. \"4\" or \"2*2 = 4\"). Do not add commentary or observations about the result."
+    },
+    {
+      "role": "user",
+      "content": "tell me a joke"
+    },
+    {
+      "role": "assistant",
+      "content": "Why couldn't the bicycle stand up by itself? \n\n"
+    },
+    {
+      "role": "assistant",
+      "content": "Why did the math book look so sad? Because it had too many problems."
+    },
+    {
+      "role": "user",
+      "content": "tell me a joke"
+    },
+    {
+      "role": "assistant",
+      "content": "Why don't scientists trust atoms? Because they make up everything."
+    },
+    {
+      "role": "user",
+      "content": " Tell me broke."
+    },
+    {
+      "role": "assistant",
+      "content": "You're broke because you spent all your money on a llama-3.1-8b-instant model."
+    },
+    {
+      "role": "user",
+      "content": " Tell me a joke."
+    },
+    {
+      "role": "assistant",
+      "content": "Why don't eggs tell jokes? They'd crack each other up."
+    }
+  ]
+}
